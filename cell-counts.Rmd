@@ -1,0 +1,81 @@
+---
+title: "cell-counts"
+author: "ML Larsen"
+date: "Saturday, January 17, 2015"
+output: pdf_document
+---
+
+## Background
+Counting the cellular density of cultures can be quite involved. This document takes you through a step-by-step process from sample and filter prep to calculating the density in a culture. R scripts can be used for single sampling or across a time course.
+
+```{r}
+#remove variable assignments from RStudio environment
+rm(list = ls())
+
+#set your working directory
+setwd("C:/Users/Megan/GitHub//cell-counts")
+```
+
+## suggestions for R code
+* single use excel template with easy to use calculation setup
+* R calibration file for filter settings
+
+## Scope calibrations
+Inside diameter of filter tower = 1.64 cm; Area of filter = 2.1 cm^2
+
+Dimensions of field calculated by capturing image of slide micrometer at each magnification
+
+x20 = 0.0013 cm2 
+x40 = 0.0003 cm2 
+x1000 = 0.0001 cm2
+
+```{r}
+## Number of fields for each objective; DO NOT CHANGE THESE VALUES
+
+x20 <- 1614.74
+x40 <- 6122.52
+x100 <- 34939.95
+```
+
+
+## Read in your data
+```{r}
+# NOTE: make sure your data file is in the appropriate format!
+
+# you can either select it directly by calling the file name
+dat <- read.csv("20140519_CountsExample.csv")
+
+# or by using Windows Explorer
+dat <- read.csv(file.choose())
+
+dat <- as.matrix(dat)
+```
+
+## Estimating cellular density
+```{r}
+# Pulls out sample names in file and includes them in a vector
+samples <- unique(dat[,2])
+
+# create an empty vector for output
+output <- c()
+
+# Calculate cells per mL (cpm) per sample
+for (i in 1:length(samples)){
+  tmp <- dat[dat[,2] == samples[i],]
+	ids <- tmp[1,2:3]
+	counts <- tmp[,4:ncol(tmp)]
+	fields <- as.numeric(counts[12])
+		fields[fields == 20] <- x20
+		fields[fields == 40] <- x40
+		fields[fields == 100] <- x100
+	cpm <- mean(as.numeric(counts[1:10]))/as.numeric(counts[11])*
+		(1-as.numeric(counts[13]))*1000*fields
+	output <- rbind(output,c(ids,cpm))
+}
+
+# View for loop data
+output
+
+# Save output on harddrive.
+write.csv(output, file = "date_output.csv")
+```
